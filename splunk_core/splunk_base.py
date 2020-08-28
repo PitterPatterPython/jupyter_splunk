@@ -159,7 +159,7 @@ class Splunk(Integration):
             print("This query doesn't start with search, if it fails, you may want to add that (it doesn't infer it like the Splunk UI")
             print("")
 
-        if query.find("or") >= 0 or query.find("and") >= 0 or query.find("Or") >= 0 or query.find("And") >= 0: 
+        if query.find(" or ") >= 0 or query.find(" and ") >= 0 or query.find(" Or ") >= 0 or query.find(" And ") >= 0: 
             print("Your query contains or, and, Or, or And - Splunk doesn't treat these as operators, and your results may not be what you want")
             print("")
 
