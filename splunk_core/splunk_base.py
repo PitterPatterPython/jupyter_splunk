@@ -40,10 +40,11 @@ class Splunk(Integration):
     myopts[name_str + '_base_url_scheme'] = ["", "Scheme of connection derived from base_url"]
 
 
-    myopts[name_str + "_default_earliest_time"] ["-15m", "The default earliest time sent to the Splunk server"]
-    myopts[name_str + "_default_latest_time"] ["now", "The default latest time sent to the Splunk server"]
-    myopts[name_str + "_search_mode"] ["normal", "The search mode sent to the splunk server"]
+    myopts[name_str + "_default_earliest_time"] = ["-15m", "The default earliest time sent to the Splunk server"]
+    myopts[name_str + "_default_latest_time"] = ["now", "The default latest time sent to the Splunk server"]
+    myopts[name_str + "_search_mode"] = ["normal", "The search mode sent to the splunk server"]
     myopts[name_str + '_output_mode'] = ["csv", "The output mode sent to the splunk server, don't change this, we rely on it being csv"]
+    myopts[name_str + '_last_query'] = ['', "The last query run in splunk"]
 
     # Class Init function - Obtain a reference to the get_ipython()
     def __init__(self, shell, pd_display_grid="html", splunk_base_url="", debug=False, *args, **kwargs):
@@ -89,10 +90,10 @@ class Splunk(Integration):
             print("")
 
             if prompt == True or self.opts[self.name_str  + "_base_url"][0] == '':
-                print("%s Base URL not specified in %s%s_BASE_URL or override requested" % (self.env_pre, self.name_str.capitalize(), self.name_str.upper()))
+                print("Base URL not specified in %s%s_BASE_URL or override requested" % (self.env_pre, self.name_str.upper()))
                 turl = input("Please type in the full %s URL: " % self.name_str.capitalize())
                 self.opts[self.name_str + '_base_url'][0] = turl
-            print("Connecting to %s URL: %s" % (self.name_str.capitalize(), self.opts['_base_url'][0]))
+            print("Connecting to %s URL: %s" % (self.name_str.capitalize(), self.opts[self.name_str + '_base_url'][0]))
             print("")
 
             myurl = self.opts[self.name_str + '_base_url'][0]
@@ -104,15 +105,16 @@ class Splunk(Integration):
             self.opts[self.name_str + '_base_url_port'][0] = ts2[1]
 
 #            Use the following if your data source requries a password
-            print("Please enter the password you wish to connect with:")
-            tpass = ""
-            self.ipy.ex("from getpass import getpass\ntpass = getpass(prompt='Connection Password: ')")
-            tpass = self.ipy.user_ns['tpass']
+            if self.connect_pass == "":
+                print("Please enter the password you wish to connect with:")
+                tpass = ""
+                self.ipy.ex("from getpass import getpass\ntpass = getpass(prompt='Connection Password: ')")
+                tpass = self.ipy.user_ns['tpass']
 
-            self.connect_pass = tpass
-            self.ipy.user_ns['tpass'] = ""
+                self.connect_pass = tpass
+                self.ipy.user_ns['tpass'] = ""
 
-            result = self.auth()
+                result = self.auth()
 
             if result == 0:
                 self.connected = True
@@ -159,11 +161,11 @@ class Splunk(Integration):
 
         if query.find("or") >= 0 or query.find("and") >= 0 or query.find("Or") >= 0 or query.find("And") >= 0: 
             print("Your query contains or, and, Or, or And - Splunk doesn't treat these as operators, and your results may not be what you want")
-
+            print("")
 
         if query.find("earliest") < 0 or query.find("latest") < 0:
             print("Your query didn't contain the strings earliest or latest, and is likely using the default settings of earliest: %s and latest: %s" % (self.opts[self.name_str + "_default_earliest_time"][0], self.opts[self.name_str + "_default_latest_time"][0]))
-
+            print("")
         # Warn and do not allow submission
         # There is no way for a user to submit this query 
 #        if query.lower().find('limit ") < 0:
@@ -171,8 +173,9 @@ class Splunk(Integration):
 #            bRun = False
         return bRun
 
-    def customQuery(self, query):
+    def customQuery(self, query, reconnect=True):
 
+        self.opts[self.name_str + "_last_query"][0] = query
         kwargs_export = { "earliest_time": self.opts[self.name_str + "_default_earliest_time"][0], "latest_time": self.opts[self.name_str + "_default_latest_time"][0], "search_mode": self.opts[self.name_str + "_search_mode"][0], "output_mode": self.opts[self.name_str + "_output_mode"][0]}
         mydf = None
         status = ""
@@ -183,11 +186,24 @@ class Splunk(Integration):
         except Exception as e:
             mydf = None
             str_err = str(e)
+
+        if str_err.find("No columns to parse from file") >= 0:
+            status = "Success - No Results"
+        elif str_err.find("Session is not logged in") >= 0:
+            # Try to rerun query
+            if reconnect == True:
+                self.disconnect()
+                self.connect()
+                m, s = self.customQuery(query, False)
+                mydf = m
+                status = s
+            else:
+                mydf = None
+                status = "Failure - Session not logged in and reconnect failed"
+        else:
             status = "Failure - query_error: " + str_err
-
+    
         return mydf, status
-
-
 
 
 # Display Help must be completely customized, please look at this Hive example
