@@ -179,16 +179,24 @@ class Splunk(Integration):
         kwargs_export = { "earliest_time": self.opts[self.name_str + "_default_earliest_time"][0], "latest_time": self.opts[self.name_str + "_default_latest_time"][0], "search_mode": self.opts[self.name_str + "_search_mode"][0], "output_mode": self.opts[self.name_str + "_output_mode"][0]}
         mydf = None
         status = ""
+        str_err = ""
         try:
             results = self.session.jobs.export(query, **kwargs_export)
             if results is not None:
                 mydf = pd.read_csv(results)
+                str_err = "Success"
+            else:
+                mydf = None
+                str_err = "Success - No Results"
         except Exception as e:
             mydf = None
             str_err = str(e)
 
-        if str_err.find("No columns to parse from file") >= 0:
+        if str_err.find("Success") >= 0:
+            pass
+        elif str_err.find("No columns to parse from file") >= 0:
             status = "Success - No Results"
+            mydf = None
         elif str_err.find("Session is not logged in") >= 0:
             # Try to rerun query
             if reconnect == True:
