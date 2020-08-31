@@ -114,7 +114,7 @@ class Splunk(Integration):
                 self.connect_pass = tpass
                 self.ipy.user_ns['tpass'] = ""
 
-                result = self.auth()
+            result = self.auth()
 
             if result == 0:
                 self.connected = True
