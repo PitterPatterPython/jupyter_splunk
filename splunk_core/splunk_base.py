@@ -105,7 +105,7 @@ class Splunk(Integration):
             self.opts[self.name_str + '_base_url_port'][0] = ts2[1]
 
 #            Use the following if your data source requries a password
-            if self.connect_pass == "":
+            if self.connect_pass == "" or prompt == True:
                 print("Please enter the password you wish to connect with:")
                 tpass = ""
                 self.ipy.ex("from getpass import getpass\ntpass = getpass(prompt='Connection Password: ')")
