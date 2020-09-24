@@ -25,6 +25,7 @@ class Splunk(Integration):
     # Static Variables
     # The name of the integration
     name_str = "splunk"
+    instances = {} 
     custom_evars = ['splunk_conn_default']
     # These are the variables in the opts dict that allowed to be set by the user. These are specific to this custom integration and are joined
     # with the base_allowed_set_opts from the integration base
