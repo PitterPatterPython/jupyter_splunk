@@ -110,7 +110,7 @@ class Splunk(Integration):
         # Warn only - Don't change bRun
         # Basically, we print a warning but don't change the bRun variable and the bReRun doesn't matter
         if query.find("search") != 0:
-            print("This query doesn't start with search, if it fails, you may want to add that (it doesn't infer it like the Splunk UI")
+            print("This query doesn't start with search, if it fails, you may want to add that (it doesn't infer it like the Splunk UI)")
             print("")
 
         if query.find(" or ") >= 0 or query.find(" and ") >= 0 or query.find(" Or ") >= 0 or query.find(" And ") >= 0: 
