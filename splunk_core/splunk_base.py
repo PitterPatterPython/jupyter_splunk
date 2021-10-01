@@ -145,6 +145,10 @@ class Splunk(Integration):
             if self.debug:
                 print("Attempting to parse earliest and latest times")
             e_val, l_val = self.parseTimes(query)
+            if self.debug:
+                print("Value of Earliest parsed from query: %s" % e_val)
+                print("Value of Latest parsed from query: %s" % l_val)
+
 
         if e_val is None:
             e_val = self.checkvar(instance, 'splunk_default_earliest_time')
