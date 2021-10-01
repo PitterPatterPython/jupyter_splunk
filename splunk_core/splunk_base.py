@@ -7,7 +7,7 @@ import os
 import time
 import pandas as pd
 from collections import OrderedDict
-
+import re
 from integration_core import Integration
 
 from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, line_cell_magic)
@@ -32,16 +32,16 @@ class Splunk(Integration):
 
     # These are the variables in the opts dict that allowed to be set by the user. These are specific to this custom integration and are joined
     # with the base_allowed_set_opts from the integration base
-    custom_allowed_set_opts = ["splunk_conn_default", "splunk_search_mode", "splunk_default_earliest_time", "splunk_default_latest_time"] 
+    custom_allowed_set_opts = ["splunk_conn_default", "splunk_search_mode", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times"]
 
-    
-    myopts = {} 
+
+    myopts = {}
     myopts['splunk_max_rows'] = [1000, 'Max number of rows to return, will potentially add this to queries']
     myopts['splunk_conn_default'] = ["default", "Default instance to connect with"]
 
-
     myopts["splunk_default_earliest_time"] = ["-15m", "The default earliest time sent to the Splunk server"]
     myopts["splunk_default_latest_time"] = ["now", "The default latest time sent to the Splunk server"]
+    myopts["splunk_parse_times"] = [1, "If this is 1, it will parse your query for earliest or latest and get the value. It will not alter the query, but update the default earliest/latest for subqueries"]
     myopts["splunk_search_mode"] = ["normal", "The search mode sent to the splunk server"]
     myopts['splunk_output_mode'] = ["csv", "The output mode sent to the splunk server, don't change this, we rely on it being csv"]
 
@@ -103,9 +103,22 @@ class Splunk(Integration):
             print("Your query contains or, and, Or, or And - Splunk doesn't treat these as operators, and your results may not be what you want")
             print("")
 
-        if query.find("earliest") < 0 or query.find("latest") < 0:
-            print("Your query didn't contain the strings earliest or latest, and is likely using the default settings of earliest: %s and latest: %s" % (self.opts[self.name_str + "_default_earliest_time"][0], self.opts[self.name_str + "_default_latest_time"][0]))
+        if query.find("[") >= 0 and query.find("]") >= 0:
+            print("Based on your use of square brackets [], you may be running a search with a subquery")
+            if self.opts['splunk_parse_times'][0] == 1:
+                print("You are having me parse the queries and set defaults, so if all works, your earliest and latest are passed to the subquery. (If you passed them!")
+            else:
+                print("It doesn't appear you are having me parse query times. Thus, the earliest and latest ONLY apply to outer most part of your query. Results will be inconsistent")
             print("")
+
+        if query.find("earliest") < 0:
+            print("Your query didn't contain the string earliest, and is likely using the default setting of earliest: %s" % (self.opts[self.name_str + "_default_earliest_time"][0]))
+            print("")
+
+        if  query.find("latest") < 0:
+            print("Your query didn't contain the string latest, and is likely using the default setting of latest: %s" % (self.opts[self.name_str + "_default_latest_time"][0]))
+            print("")
+
         # Warn and do not allow submission
         # There is no way for a user to submit this query 
 #        if query.lower().find('limit ") < 0:
@@ -113,9 +126,32 @@ class Splunk(Integration):
 #            bRun = False
         return bRun
 
+    def parseTimes(self, query):
+        e_ret = None
+        l_ret = None
+        e_match = re.search(r"earliest ?= ?[\"\']?([^\s\'\"]+)[\s\"\']", query)
+        if e_match:
+            e_ret = e_match.group(1)
+        l_match = re.search(r"latest ?= ?[\"\']?([^\s\'\"]+)[\s\"\']", query)
+        if l_match:
+            l_ret = l_match.group(1)
+        return e_ret, l_ret
+
     def customQuery(self, query, instance, reconnect=True):
 
-        kwargs_export = { "earliest_time": self.checkvar(instance, 'splunk_default_earliest_time'), "latest_time": self.checkvar(instance, "splunk_default_latest_time"), "search_mode": self.checkvar(instance, "splunk_search_mode"), "output_mode": self.checkvar(instance, "splunk_output_mode")}
+        e_val = None
+        l_val = None
+        if self.opts["splunk_parse_times"][0] == 1:
+            if self.debug:
+                print("Attempting to parse earliest and latest times")
+            e_val, l_val = self.parseTimes(query)
+
+        if e_val is None:
+            e_val = self.checkvar(instance, 'splunk_default_earliest_time')
+        if lval is None:
+            l_val = self.checkvar(instance, "splunk_default_latest_time")
+
+        kwargs_export = { "earliest_time": e_val, "latest_time": l_val, "search_mode": self.checkvar(instance, "splunk_search_mode"), "output_mode": self.checkvar(instance, "splunk_output_mode")}
         mydf = None
         status = ""
         str_err = ""
