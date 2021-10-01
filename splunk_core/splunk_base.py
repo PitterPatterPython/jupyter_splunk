@@ -106,7 +106,7 @@ class Splunk(Integration):
         if query.find("[") >= 0 and query.find("]") >= 0:
             print("Based on your use of square brackets [], you may be running a search with a subquery")
             if self.opts['splunk_parse_times'][0] == 1:
-                print("You are having me parse the queries and set defaults, so if all works, your earliest and latest are passed to the subquery. (If you passed them!")
+                print("You are having me parse the queries and set defaults, so if all works, your earliest and latest are passed to the subquery. (If you passed them!)")
             else:
                 print("It doesn't appear you are having me parse query times. Thus, the earliest and latest ONLY apply to outer most part of your query. Results will be inconsistent")
             print("")
