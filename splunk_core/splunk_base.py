@@ -148,7 +148,7 @@ class Splunk(Integration):
 
         if e_val is None:
             e_val = self.checkvar(instance, 'splunk_default_earliest_time')
-        if lval is None:
+        if l_val is None:
             l_val = self.checkvar(instance, "splunk_default_latest_time")
 
         kwargs_export = { "earliest_time": e_val, "latest_time": l_val, "search_mode": self.checkvar(instance, "splunk_search_mode"), "output_mode": self.checkvar(instance, "splunk_output_mode")}
