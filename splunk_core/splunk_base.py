@@ -9,7 +9,7 @@ import pandas as pd
 from collections import OrderedDict
 import re
 from integration_core import Integration
-
+import datetime
 from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, line_cell_magic)
 from IPython.core.display import HTML
 
