@@ -156,6 +156,10 @@ class Splunk(Integration):
             l_val = self.checkvar(instance, "splunk_default_latest_time")
 
         kwargs_export = { "earliest_time": e_val, "latest_time": l_val, "search_mode": self.checkvar(instance, "splunk_search_mode"), "output_mode": self.checkvar(instance, "splunk_output_mode")}
+        if self.debug:
+            print("kwargs: %s" % kwargs_export)
+            print("query: %s" % query)
+
         mydf = None
         status = ""
         str_err = ""
