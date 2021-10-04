@@ -144,7 +144,7 @@ class Splunk(Integration):
         m = re.search("\d{1,2}\/\d{1,2}\/\d{4}", intime)
 
         if m:
-            tmp_dt = datetime.datetime.strptime(intime)
+            tmp_dt = datetime.datetime.strptime(intime, "%m/%d/%Y:%H:%M:%S")
             outtime = tmp_dt.strftime("%Y-%m-%dT%H:%M:%S")
         else:
             outtime = intime
