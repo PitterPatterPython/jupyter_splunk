@@ -137,6 +137,18 @@ class Splunk(Integration):
             l_ret = l_match.group(1)
         return e_ret, l_ret
 
+
+
+    def splunkTime(self, intime):
+        # Converts the normal shitty splunk time to the other format it requires in the API
+        m = re.search("\d{1,2}\/\d{1,2}\/\d{4}", intime)
+
+        if m:
+            tmp_dt = datatime.datetime.strptime(intime)
+            outtime = tmp_dt.strftime("%Y-%m-%dT%H:%M:%S")
+        else:
+            outtime = intime
+        return outtime
     def customQuery(self, query, instance, reconnect=True):
 
         e_val = None
@@ -154,6 +166,8 @@ class Splunk(Integration):
             e_val = self.checkvar(instance, 'splunk_default_earliest_time')
         if l_val is None:
             l_val = self.checkvar(instance, "splunk_default_latest_time")
+        e_val = self.splunkTime(e_val)
+        l_val = self.splunkTime(l_val)
 
         kwargs_export = { "earliest_time": e_val, "latest_time": l_val, "search_mode": self.checkvar(instance, "splunk_search_mode"), "output_mode": self.checkvar(instance, "splunk_output_mode")}
         if self.debug:
