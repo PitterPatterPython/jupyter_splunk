@@ -68,10 +68,9 @@ class Splunk(Integration):
         if inst is not None:
             inst['session'] = None
             mypass = ""
-            if inst['connect_pass'] is not None:
-                mypass = inst['connect_pass']
-            else:
-                mypass = self.instances[self.opts[self.name_str + "_conn_default"][0]]['connect_pass']
+            if inst['enc_pass'] is not None:
+                mypass = self.ret_dec_pass(inst['enc_pass'])
+                inst['connect_pass'] = ""
             try:
                 inst['session'] = splclient.connect(host=inst['host'], port=inst['port'], username=inst['user'], password=mypass)
                 result = 0
