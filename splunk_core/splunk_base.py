@@ -26,13 +26,13 @@ class Splunk(Integration):
     # The name of the integration
     name_str = "splunk"
     instances = {} 
-    custom_evars = ['splunk_conn_default']
+    custom_evars = ['splunk_conn_default', 'splunk_autologin']
     # These are the variables in the opts dict that allowed to be set by the user. These are specific to this custom integration and are joined
     # with the base_allowed_set_opts from the integration base
 
     # These are the variables in the opts dict that allowed to be set by the user. These are specific to this custom integration and are joined
     # with the base_allowed_set_opts from the integration base
-    custom_allowed_set_opts = ["splunk_conn_default", "splunk_search_mode", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times"]
+    custom_allowed_set_opts = ["splunk_conn_default", "splunk_search_mode", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin"]
 
 
     myopts = {}
@@ -44,6 +44,7 @@ class Splunk(Integration):
     myopts["splunk_parse_times"] = [1, "If this is 1, it will parse your query for earliest or latest and get the value. It will not alter the query, but update the default earliest/latest for subqueries"]
     myopts["splunk_search_mode"] = ["normal", "The search mode sent to the splunk server"]
     myopts['splunk_output_mode'] = ["csv", "The output mode sent to the splunk server, don't change this, we rely on it being csv"]
+    myopts['splunk_autologin'] = [True, "Works with the the autologin setting on connect"]
 
     # Class Init function - Obtain a reference to the get_ipython()
     def __init__(self, shell, debug=False, *args, **kwargs):
@@ -72,7 +73,7 @@ class Splunk(Integration):
                 mypass = self.ret_dec_pass(inst['enc_pass'])
                 inst['connect_pass'] = ""
             try:
-                inst['session'] = splclient.connect(host=inst['host'], port=inst['port'], username=inst['user'], password=mypass)
+                inst['session'] = splclient.connect(host=inst['host'], port=inst['port'], username=inst['user'], password=mypass, autologin=self.opts['splunk_autologin'][0])
                 result = 0
             except:
                 print("Unable to connect to Splunk instance %s at %s" % (instance, inst["conn_url"]))
