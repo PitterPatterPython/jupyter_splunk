@@ -1,2 +1,16 @@
 bulld/*
 build/**
+__pycache__
+__pycache__/*
+__pycache__/**
+*/__pycache__
+**/__pycache__
+jupyter_splunk.egg-info
+jupyter_splunk.egg-info/*
+jupyter_splunk.egg-info/**
+dist
+dist/*
+dist/**
+build
+*.env
+**.env
