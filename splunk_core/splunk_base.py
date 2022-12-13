@@ -14,7 +14,7 @@ class Splunk(Magics):
 
 
     def __init__(self, shell, debug=False, *args, **kwargs):
-        super(Taxii, self).__init__(shell, debug=debug)
+        super(Splunk, self).__init__(shell, debug=debug)
         self.debug = debug
 
         # Check namespace for integration and addon dicts
