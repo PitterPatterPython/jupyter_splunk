@@ -90,9 +90,6 @@ class Splunk(Integration):
         if self.instances[instance]['last_query'] == query:
             # If the validation allows rerun, that we are here:
             bReRun = True
-        # Ok, we know if we are rerun or not, so let's now set the last_query 
-        self.instances[instance]['last_query'] = query
-        self.instances[instance]['last_query_ts'] = int(time.time())
         # Example Validation
 
         # Warn only - Don't change bRun
