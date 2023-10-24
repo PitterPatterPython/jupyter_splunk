@@ -82,47 +82,48 @@ class Splunk(Integration):
 
         return result
 
-
+   
     def validateQuery(self, query, instance):
+        ''' Warn only - Don't change bRun. Basically, we print a warning but don't change the bRun variable and the bReRun doesn't matter'''
+
         bRun = True
         bReRun = False
 
         if self.instances[instance]['last_query'] == query:
             # If the validation allows rerun, that we are here:
             bReRun = True
-        # Example Validation
+        
+        # Validation checks 
 
-        # Warn only - Don't change bRun
-        # Basically, we print a warning but don't change the bRun variable and the bReRun doesn't matter
-        if query.find("search") != 0:
-            print("This query doesn't start with search, if it fails, you may want to add that (it doesn't infer it like the Splunk UI)")
-            print("")
+        # The query doesn't start with the "search" command (we're using a negative lookahead, future self)
+        if re.search(r'^(?!search)', query):
+            jiu.displayMD("**[ ! ]** This query doesn't start with the `search` command. \
+                          If it fails, try prepending it to the beginning of the query.")
 
-        if query.find(" or ") >= 0 or query.find(" and ") >= 0 or query.find(" Or ") >= 0 or query.find(" And ") >= 0: 
-            print("Your query contains or, and, Or, or And - Splunk doesn't treat these as operators, and your results may not be what you want")
-            print("")
+        # The query contains non-capitalized "AND", "OR", and/or "NOT" operators
+        # This case also addresses weird typos like "aND" and "Not" and all their variations
+        if re.search(r'\s(and|or|not)\s', query, re.IGNORECASE) and re.search(r'\s(AND|OR|NOT)\s', query) == None:
+            jiu.displayMD("**[ ! ]** Your query contains `and` / `or` operators. Splunk requires these to be capitalized. \
+                          Review the [query documentation](https://docs.splunk.com/Documentation/SplunkCloud/9.0.2305/Search/Booleanexpressions).")
 
-        if query.find("[") >= 0 and query.find("]") >= 0:
-            print("Based on your use of square brackets [], you may be running a search with a subquery")
+        # The query contains an open and close bracket
+        if re.search(r'[\[\]]', query):
+            jiu.displayMD("**[ ! ]** Your query contains square brackets `[ ]`. This might be executed as a \
+                           subquery. Double-check your results!")
             if self.opts['splunk_parse_times'][0] == 1:
-                print("You are having me parse the queries and set defaults, so if all works, your earliest and latest are passed to the subquery. (If you passed them!)")
+                jiu.displayMD("**[ ! ]** You are having me parse the queries and set defaults, so if all works \
+                              , your earliest and latest are passed to the subquery. (If you passed them!)")
             else:
-                print("It doesn't appear you are having me parse query times. Thus, the earliest and latest ONLY apply to outer most part of your query. Results will be inconsistent")
-            print("")
+                jiu.displayMD("**[ ! ]** It doesn't appear you are having me parse query times. \
+                               Thus, the earliest and latest ONLY apply to outer most part of your query. Results will be inconsistent")
 
-        if query.find("earliest") < 0:
-            print("Your query didn't contain the string earliest, and is likely using the default setting of earliest: %s" % (self.opts[self.name_str + "_default_earliest_time"][0]))
-            print("")
+        # The query doesn't contain the "earliest" keyword
+        if re.search(r'earliest', query) == None:
+            jiu.displayMD("**[ ! ]** Your query didn't contain the `earliest` parameter. Defaulting to **%s**" % (self.opts[self.name_str + "_default_earliest_time"][0]))
 
-        if  query.find("latest") < 0:
-            print("Your query didn't contain the string latest, and is likely using the default setting of latest: %s" % (self.opts[self.name_str + "_default_latest_time"][0]))
-            print("")
+        if  re.search(r'latest', query) == None:
+            jiu.displayMD("**[ ! ]** Your query didn't contain the `latest` parameter. Defaulting to **%s**" % (self.opts[self.name_str + "_default_latest_time"][0]))
 
-        # Warn and do not allow submission
-        # There is no way for a user to submit this query 
-#        if query.lower().find('limit ") < 0:
-#            print("ERROR - All queries must have a limit clause - Query will not submit without out")
-#            bRun = False
         return bRun
 
     def parseTimes(self, query):
