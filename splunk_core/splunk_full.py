@@ -5,13 +5,14 @@ import json
 import sys
 import os
 import time
+from time import sleep
 import pandas as pd
 from collections import OrderedDict
 import re
 from integration_core import Integration
 import datetime
 from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, line_cell_magic)
-from IPython.core.display import HTML
+from IPython.display import HTML
 from splunk_core._version import __desc__
 
 # Your Specific integration imports go here, make sure they are in requirements!
@@ -45,7 +46,7 @@ class Splunk(Integration):
     myopts["splunk_autologin"] = [True, "Works with the the autologin setting on connect"]
 
     # Class Init function - Obtain a reference to the get_ipython()
-    def __init__(self, shell, debug=True, *args, **kwargs):
+    def __init__(self, shell, debug=False, *args, **kwargs):
         super(Splunk, self).__init__(shell, debug=debug)
         self.debug = debug
 
@@ -217,10 +218,9 @@ class Splunk(Integration):
         latest_value = self.splunkTime(latest_value)
 
         kwargs_export = { "earliest_time": earliest_value, 
-                         "latest_time": latest_value, 
-                         "search_mode": self.checkvar(instance, "splunk_search_mode"), 
-                         "output_mode": self.checkvar(instance, "splunk_output_mode")
-                         }
+                            "latest_time": latest_value, 
+                            "exec_mode": self.checkvar(instance, "splunk_search_mode")
+                        }
         if self.debug:
             jiu.displayMD(f"**[ Dbg ]** **kwargs**: {kwargs_export}")
             jiu.displayMD(f"**[ Dbg ]** **query:** {query}")
@@ -231,14 +231,36 @@ class Splunk(Integration):
         
         # Perform the search
         try:
-            results = self.instances[instance]["session"].jobs.export(query, **kwargs_export)
+            search_job = self.instances[instance]["session"].jobs.create(query, **kwargs_export)
+            jiu.displayMD(f"**[ * ]** Search job (**{search_job.name}**) has been created")
+            jiu.displayMD("**Progress**")
+
+            while True:
+                while not search_job.is_ready():
+                    pass
+
+                stats = { "isDone": search_job["isDone"],
+                            "doneProgress": float(search_job["doneProgress"])*100,
+                            "scanCount": int(search_job["scanCount"]),
+                            "eventCount": int(search_job["eventCount"]),
+                            "resultCount": int(search_job["resultCount"])
+                        }
+
+                print(f"\r\t%(doneProgress)03.1f%%\t\t%(scanCount)d scanned\t\t%(eventCount)d matched\t\t%(resultCount)d results" % stats, end="")
+
+                if stats["isDone"] == "1":
+                    jiu.displayMD("**[ * ]** Job has completed!")
+                    break
+
+                sleep(1)
             
-            if results is not None:
-                dataframe = pd.read_csv(results)
+            if search_job.results is not None:
+                dataframe = pd.read_csv(search_job.results(output_mode=self.checkvar(instance, "splunk_output_mode")))
                 str_err = "Success"
             else:
                 dataframe = None
                 str_err = "Success - No Results"
+        
         except Exception as e:
             dataframe = None
             str_err = str(e)
