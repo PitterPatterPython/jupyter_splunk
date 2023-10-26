@@ -104,6 +104,10 @@ class Splunk(Integration):
         if re.search(r"^(?!search)", query):
             jiu.displayMD("**[ ! ]** This query doesn't start with the `search` command. \
                           If it fails, try prepending it to the beginning of the query.")
+            
+        # The query contains the "search" command but doesn't include a "| table" command
+        if re.search(r"^(?=search)", query) and re.search(r"\|\s{0,}table", query) == None:
+            jiu.displayMD("**[ ! ]** Your query includes the `search` command but doesn't include the `| table` command. This causes display issues, so we're appending the `| table` command to your query.")
 
         # The query contains non-capitalized "AND", "OR", and/or "NOT" operators
         # This case also addresses weird typos like "aND" and "Not" and all their variations
@@ -122,10 +126,11 @@ class Splunk(Integration):
                 jiu.displayMD("**[ ! ]** It doesn't appear you are having me parse query times. \
                                Thus, the earliest and latest ONLY apply to outer most part of your query. Results will be inconsistent")
 
-        # The query doesn't contain the "earliest" keyword
+        # The query doesn't contain the "earliest" parameter
         if re.search(r"earliest", query) == None:
             jiu.displayMD("**[ ! ]** Your query didn't contain the `earliest` parameter. Defaulting to **%s**" % (self.opts[self.name_str + "_default_earliest_time"][0]))
 
+        # The query doesn't contain the "latest" parameter
         if  re.search(r"latest", query) == None:
             jiu.displayMD("**[ ! ]** Your query didn't contain the `latest` parameter. Defaulting to **%s**" % (self.opts[self.name_str + "_default_latest_time"][0]))
 
@@ -207,12 +212,14 @@ class Splunk(Integration):
                 else:
                     jiu.displayMD(f"**[ Dbg ]** Did not find a `latest` value")
 
-
         if earliest_value is None:
             earliest_value = self.checkvar(instance, "splunk_default_earliest_time")
 
         if latest_value is None:
             latest_value = self.checkvar(instance, "splunk_default_latest_time")
+
+        if re.search(r"^(?=search)", query) and re.search(r"\|\s{0,}table", query) == None:
+            query += " | table *"
 
         earliest_value = self.splunkTime(earliest_value)
         latest_value = self.splunkTime(latest_value)
