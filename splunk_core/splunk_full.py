@@ -105,9 +105,9 @@ class Splunk(Integration):
             jiu.displayMD("**[ ! ]** This query doesn't start with the `search` command. \
                           If it fails, try prepending it to the beginning of the query.")
             
-        # The query contains the "search" command but doesn't include a "| table" command
+        # The query contains the "search" command but doesn't include a "| table *" command
         if re.search(r"^(?=search)", query) and re.search(r"\|\s{0,}table", query) == None:
-            jiu.displayMD("**[ ! ]** Your query includes the `search` command but doesn't include the `| table` command. This causes display issues, so we're appending the `| table` command to your query.")
+            jiu.displayMD("**[ ! ]** Your query includes the `search` command but doesn't include the `| table *` command. **This is going to cause issues and is highly recommended that you add this to your query!**")
 
         # The query contains non-capitalized "AND", "OR", and/or "NOT" operators
         # This case also addresses weird typos like "aND" and "Not" and all their variations
@@ -217,9 +217,6 @@ class Splunk(Integration):
 
         if latest_value is None:
             latest_value = self.checkvar(instance, "splunk_default_latest_time")
-
-        if re.search(r"^(?=search)", query) and re.search(r"\|\s{0,}table", query) == None:
-            query += " | table *"
 
         earliest_value = self.splunkTime(earliest_value)
         latest_value = self.splunkTime(latest_value)
