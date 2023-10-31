@@ -1,26 +1,14 @@
 #!/usr/bin/python
 
-# Base imports for all integrations, only remove these at your own risk!
-import json
-import sys
-import os
-import time
 from time import sleep
 import pandas as pd
-from collections import OrderedDict
 import re
 from integration_core import Integration
 import datetime
-from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, line_cell_magic)
-from IPython.display import HTML
+from IPython.core.magic import (magics_class, line_cell_magic)
 from splunk_core._version import __desc__
-
-# Your Specific integration imports go here, make sure they are in requirements!
 from splunklib import client as splclient
 import jupyter_integrations_utility as jiu
-#import IPython.display
-from IPython.display import display_html, display, Javascript, FileLink, FileLinks, Image
-import ipywidgets as widgets
 
 @magics_class
 class Splunk(Integration):
