@@ -226,6 +226,7 @@ class Splunk(Integration):
             search_job = self.instances[instance]["session"].jobs.create(query, **kwargs_export)
             jiu.displayMD(f"**[ * ]** Search job (**{search_job.name}**) has been created")
             jiu.displayMD("**Progress**")
+            widgets.Button(description = "Stop")
 
             while True:
                 while not search_job.is_ready():
@@ -247,7 +248,7 @@ class Splunk(Integration):
                 sleep(1)
             
             if search_job.results is not None:
-                dataframe = pd.read_csv(search_job.results(output_mode=self.checkvar(instance, "csv")))
+                dataframe = pd.read_csv(search_job.results(output_mode="csv"))
                 str_err = "Success"
             else:
                 dataframe = None
