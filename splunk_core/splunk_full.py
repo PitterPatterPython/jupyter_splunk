@@ -78,15 +78,15 @@ class Splunk(Integration):
         instance -- the Splunk instance to perform the query against
 
         Returns:
-        brun -- this is another one of John's variables that isn't discernable to other humans
+        allow_run -- boolean that determines if the query should be allowed to run
         """
         
-        bRun = True
-        bReRun = False
+        allow_run = True
+        allow_rerun = False
 
         if self.instances[instance]["last_query"] == query:
             # If the validation allows rerun, that we are here:
-            bReRun = True
+            allow_rerun = True
         
         # Validation checks 
 
@@ -124,7 +124,7 @@ class Splunk(Integration):
         if  re.search(r"latest", query) == None:
             jiu.displayMD("**[ ! ]** Your query didn't contain the `latest` parameter. Defaulting to **%s**" % (self.opts[self.name_str + "_default_latest_time"][0]))
 
-        return bRun
+        return allow_run
 
     def parseTimes(self, query):
         """Find the "earliest" and "latest" parameter's values from the user's query, if they supplied them
