@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
 import datetime
-from IPython.core.magic import (magics_class, line_cell_magic)
-import ipywidgets as widgets
-import pandas as pd
 import re
 from time import sleep
 
+from IPython.core.magic import (magics_class, line_cell_magic)
+from IPython.display import display
+import pandas as pd
 from splunklib import client as splclient
 
 from splunk_core._version import __desc__
@@ -226,7 +226,6 @@ class Splunk(Integration):
             search_job = self.instances[instance]["session"].jobs.create(query, **kwargs_export)
             jiu.displayMD(f"**[ * ]** Search job (**{search_job.name}**) has been created")
             jiu.displayMD("**Progress**")
-            widgets.Button(description = "Stop")
 
             while True:
                 while not search_job.is_ready():
@@ -281,8 +280,7 @@ class Splunk(Integration):
         else:
             status = "Failure - query_error: " + str_err
     
-        return dataframe, status
-
+        return dataframe, status        
 
     # Display Help can be customized
     def customOldHelp(self):
