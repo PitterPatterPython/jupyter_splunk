@@ -1,13 +1,15 @@
 #!/usr/bin/python
 
-from time import sleep
-import pandas as pd
-import re
-from integration_core import Integration
 import datetime
 from IPython.core.magic import (magics_class, line_cell_magic)
-from splunk_core._version import __desc__
+import pandas as pd
+import re
+from time import sleep
+
 from splunklib import client as splclient
+
+from splunk_core._version import __desc__
+from integration_core import Integration
 import jupyter_integrations_utility as jiu
 
 @magics_class
