@@ -2,6 +2,7 @@
 
 import datetime
 from IPython.core.magic import (magics_class, line_cell_magic)
+import ipywidgets as widgets
 import pandas as pd
 import re
 from time import sleep
@@ -22,17 +23,14 @@ class Splunk(Integration):
     # These are the variables in the opts dict that allowed to be set by the user. 
     # These are specific to this custom integration and are joined with the 
     # base_allowed_set_opts from the integration base
-    custom_allowed_set_opts = ["splunk_conn_default", "splunk_search_mode", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin"]
+    custom_allowed_set_opts = ["splunk_conn_default", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin"]
 
     myopts = {}
     myopts["splunk_max_rows"] = [1000, "Max number of rows to return, will potentially add this to queries"]
     myopts["splunk_conn_default"] = ["default", "Default instance to connect with"]
-
     myopts["splunk_default_earliest_time"] = ["-15m", "The default earliest time sent to the Splunk server"]
     myopts["splunk_default_latest_time"] = ["now", "The default latest time sent to the Splunk server"]
     myopts["splunk_parse_times"] = [1, "If this is 1, it will parse your query for earliest or latest and get the value. It will not alter the query, but update the default earliest/latest for subqueries"]
-    myopts["splunk_search_mode"] = ["normal", "The search mode sent to the splunk server"]
-    myopts["splunk_output_mode"] = ["csv", "The output mode sent to the splunk server, don't change this, we rely on it being csv"]
     myopts["splunk_autologin"] = [True, "Works with the the autologin setting on connect"]
 
     # Class Init function - Obtain a reference to the get_ipython()
@@ -213,7 +211,7 @@ class Splunk(Integration):
 
         kwargs_export = { "earliest_time": earliest_value, 
                             "latest_time": latest_value, 
-                            "exec_mode": self.checkvar(instance, "splunk_search_mode")
+                            "exec_mode": "normal"
                         }
         if self.debug:
             jiu.displayMD(f"**[ Dbg ]** **kwargs**: {kwargs_export}")
@@ -249,7 +247,7 @@ class Splunk(Integration):
                 sleep(1)
             
             if search_job.results is not None:
-                dataframe = pd.read_csv(search_job.results(output_mode=self.checkvar(instance, "splunk_output_mode")))
+                dataframe = pd.read_csv(search_job.results(output_mode=self.checkvar(instance, "csv")))
                 str_err = "Success"
             else:
                 dataframe = None
