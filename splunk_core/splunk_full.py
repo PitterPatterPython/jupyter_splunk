@@ -23,7 +23,7 @@ class Splunk(Integration):
     # These are the variables in the opts dict that allowed to be set by the user. 
     # These are specific to this custom integration and are joined with the 
     # base_allowed_set_opts from the integration base
-    custom_allowed_set_opts = ["splunk_max_rows", "splunk_conn_default", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin"]
+    custom_allowed_set_opts = ["splunk_conn_default", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin"]
 
     myopts = {}
     myopts["splunk_conn_default"] = ["default", "Default instance to connect with"]
