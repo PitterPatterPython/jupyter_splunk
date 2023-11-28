@@ -26,7 +26,6 @@ class Splunk(Integration):
     custom_allowed_set_opts = ["splunk_conn_default", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin"]
 
     myopts = {}
-    myopts["splunk_max_rows"] = [1000, "Max number of rows to return, will potentially add this to queries"]
     myopts["splunk_conn_default"] = ["default", "Default instance to connect with"]
     myopts["splunk_default_earliest_time"] = ["-15m", "The default earliest time sent to the Splunk server"]
     myopts["splunk_default_latest_time"] = ["now", "The default latest time sent to the Splunk server"]
@@ -209,12 +208,16 @@ class Splunk(Integration):
         earliest_value = self.splunkTime(earliest_value)
         latest_value = self.splunkTime(latest_value)
 
-        kwargs_export = { "earliest_time": earliest_value, 
+        # The "exec_mode" parameter used to be a "myopts" parameter, but we've removed that
+        # and hard-coded it to be "normal" since "normal" is the only search type that allows
+        # polling for progress. https://dev.splunk.com/enterprise/docs/devtools/python/sdk-python/howtousesplunkpython/howtorunsearchespython
+        kwargs = { 
+                            "earliest_time": earliest_value, 
                             "latest_time": latest_value, 
                             "exec_mode": "normal"
                         }
         if self.debug:
-            jiu.displayMD(f"**[ Dbg ]** **kwargs**: {kwargs_export}")
+            jiu.displayMD(f"**[ Dbg ]** **kwargs**: {kwargs}")
             jiu.displayMD(f"**[ Dbg ]** **query:** {query}")
 
         dataframe = None
@@ -223,7 +226,7 @@ class Splunk(Integration):
         
         # Perform the search
         try:
-            search_job = self.instances[instance]["session"].jobs.create(query, **kwargs_export)
+            search_job = self.instances[instance]["session"].jobs.create(query, **kwargs)
             jiu.displayMD(f"**[ * ]** Search job (**{search_job.name}**) has been created")
             jiu.displayMD("**Progress**")
 
@@ -247,7 +250,7 @@ class Splunk(Integration):
                 sleep(1)
             
             if search_job.results is not None:
-                dataframe = pd.read_csv(search_job.results(output_mode="csv"))
+                dataframe = pd.read_csv(search_job.results(output_mode="csv", count=0))
                 str_err = "Success"
             else:
                 dataframe = None
