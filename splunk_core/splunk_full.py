@@ -7,11 +7,14 @@ from time import sleep
 from IPython.core.magic import (magics_class, line_cell_magic)
 from IPython.display import display
 import pandas as pd
-from splunklib import client as splclient
 
 from splunk_core._version import __desc__
 from integration_core import Integration
 import jupyter_integrations_utility as jiu
+
+from utils.splunk_api import SplunkAPI
+from utils.helper_functions import splunk_time, parse_times
+from utils.user_input_parser import UserInputParser
 
 @magics_class
 class Splunk(Integration):
@@ -41,6 +44,7 @@ class Splunk(Integration):
         for k in self.myopts.keys():
             self.opts[k] = self.myopts[k]
 
+        self.user_input_parser = UserInputParser()
         self.load_env(self.custom_evars)
         self.parse_instances()
 
@@ -59,7 +63,7 @@ class Splunk(Integration):
                 mypass = self.ret_dec_pass(inst["enc_pass"])
                 inst["connect_pass"] = ""
             try:
-                inst["session"] = splclient.connect(host=inst["host"], port=inst["port"], username=inst["user"], password=mypass, autologin=self.opts["splunk_autologin"][0])
+                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=inst["user"], password=mypass, autologin=self.opts["splunk_autologin"][0])
                 result = 0
             except:
                 jiu.displayMD(f"**[ * ]** Unable to connect to Splunk instance {instance} at {inst['conn_url']}")
@@ -122,49 +126,6 @@ class Splunk(Integration):
             jiu.displayMD("**[ ! ]** Your query didn't contain the `latest` parameter. Defaulting to **%s**" % (self.opts[self.name_str + "_default_latest_time"][0]))
 
         return allow_run
-
-    def parseTimes(self, query):
-        """Find the "earliest" and "latest" parameter's values from the user's query, if they supplied them
-
-        Keyword arguments:
-        query -- the Splunk query supplied by the user
-
-        Returns:
-        earliest value -- the value of the "earliest" parameter
-        latest_value -- the value of the "latest" parameter
-        """
-
-        earliest_value = None
-        latest_value = None
-        
-        earliest_pattern = re.search(r"earliest ?= ?[\"\']?([^\s\'\"]+)[\s\"\']", query)
-        if earliest_pattern:
-            earliest_value = earliest_pattern.group(1)
-        
-        latest_pattern = re.search(r"latest ?= ?[\"\']?([^\s\'\"]+)[\s\"\']", query)
-        if latest_pattern:
-            latest_value = latest_pattern.group(1)
-        
-        return earliest_value, latest_value
-
-    def splunkTime(self, intime):
-        """ Converts Splunk time to the required time format for the Splunk API
-
-        Keyword arguments:
-        intime -- no idea
-
-        Returns:
-        outtime -- no idea what this is either
-        """
-        
-        m = re.search("\d{1,2}\/\d{1,2}\/\d{4}", intime)
-
-        if m:
-            tmp_dt = datetime.datetime.strptime(intime, "%m/%d/%Y:%H:%M:%S")
-            outtime = tmp_dt.strftime("%Y-%m-%dT%H:%M:%S")
-        else:
-            outtime = intime
-        return outtime
     
     def customQuery(self, query, instance, reconnect=True):
         """Execute a user supplied Splunk query after a %%splunk cell magic
@@ -186,7 +147,7 @@ class Splunk(Integration):
             if self.debug:
                 jiu.displayMD("**[ Dbg ]** Attempting to parse `earliest` and `latest` times...")
             
-            earliest_value, latest_value = self.parseTimes(query)
+            earliest_value, latest_value = parse_times(query)
             
             if self.debug:
                 if earliest_value != None:
@@ -205,8 +166,8 @@ class Splunk(Integration):
         if latest_value is None:
             latest_value = self.checkvar(instance, "splunk_default_latest_time")
 
-        earliest_value = self.splunkTime(earliest_value)
-        latest_value = self.splunkTime(latest_value)
+        earliest_value = splunk_time(earliest_value)
+        latest_value = splunk_time(latest_value)
 
         # The "exec_mode" parameter used to be a "myopts" parameter, but we've removed that
         # and hard-coded it to be "normal" since "normal" is the only search type that allows
@@ -226,7 +187,7 @@ class Splunk(Integration):
         
         # Perform the search
         try:
-            search_job = self.instances[instance]["session"].jobs.create(query, **kwargs)
+            search_job = self.instances[instance]["session"].session.jobs.create(query, **kwargs)
             jiu.displayMD(f"**[ * ]** Search job (**{search_job.name}**) has been created")
             jiu.displayMD("**Progress**")
 
@@ -312,17 +273,58 @@ class Splunk(Integration):
     # This is the magic name.
     @line_cell_magic
     def splunk(self, line, cell=None):
+        """Execute a custom line magic against a Splunk instance.
+            
+            START HERE -- Here's the general flow:
+            1.  We need to parse the user's line magic via ../utils/user_input_parser. We
+                construct an object there that has metadata. We use that object to drive
+                the rest of this function.
+            2.  We'll display errors if there were any obvious ones during parsing (this lives)
+                on the "errors" key in the object from step 1 above.
+            3.  Using the parsed input's "input" object, we'll send those to the Splunk
+                API's _handler function via ../utils/splunk_api. The _handler function
+                plays traffic cop for every API call. 
+
+        Args:
+            line (string): the user's line magic
+            cell (None, optional): user's cell magic (this shouldn't ever exist right here).
+        """
         if cell is None:
             line = line.replace("\r", "")
             line_handled = self.handleLine(line)
+            
             if self.debug:
                 jiu.displayMD(f"**[ Dbg ]** **line**: {line}")
                 jiu.displayMD(f"**[ Dbg ]** **cell**: {cell}")
+            
             if not line_handled: # We based on this we can do custom things for integrations. 
-                if line.lower() == "testintwin":
-                    jiu.displayMD(f"You've found the custom testint winning line magic!")
-                else:
-                    jiu.displayMD(f"I'm sorry, I don't know what you want to do with your line magic, try just {self.name_str} for help options")
+                try:
+                    parsed_input = self.user_input_parser.parse_input(line)
+                    
+                    if self.debug:
+                        jiu.displayMD(f"**[ Dbg ]** Parsed Query: `{parsed_input}`")
+                        
+                    if parsed_input["error"] == True:
+                        jiu.displayMD(f"**[ ! ]** {parsed_input['message']}")
+                        
+                    else:
+                        instance = parsed_input["input"]["instance"]
+                        dataframe = parsed_input["input"]["dataframe"]
+                        
+                        if instance not in self.instances.keys():
+                            jiu.displayMD(f"**[ * ]** Instance **{instance}** not found in instances")
+                            
+                        elif dataframe not in self.ipy.user_ns.keys():
+                            jiu.displayMD(f"**[ * ]** You supplied a dataframe **{dataframe}** that doesn't seem to exist.")
+                    
+                        else:
+                            user_dataframe = self.ipy.user_ns[dataframe]
+                            response = self.instances[instance]["session"]._handler(**parsed_input["input"], df=user_dataframe)
+                            jiu.displayMD(f"**[ * ]** {response}")
+                
+                except Exception as e:
+                    jiu.displayMD(f"**[ ! ]** There was an error in your line magic: `{e}`")
+        
         else: # This is run is the cell is not none, thus it's a cell to process  - For us, that means a query
             self.handleCell(cell, line)
 
