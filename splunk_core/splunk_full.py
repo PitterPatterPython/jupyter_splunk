@@ -273,6 +273,22 @@ class Splunk(Integration):
     # This is the magic name.
     @line_cell_magic
     def splunk(self, line, cell=None):
+        """Execute a custom line magic against a Splunk instance.
+            
+            START HERE -- Here's the general flow:
+            1.  We need to parse the user's line magic via ../utils/user_input_parser. We
+                construct an object there that has metadata. We use that object to drive
+                the rest of this function.
+            2.  We'll display errors if there were any obvious ones during parsing (this lives)
+                on the "errors" key in the object from step 1 above.
+            3.  Using the parsed input's "input" object, we'll send those to the Splunk
+                API's _handler function via ../utils/splunk_api. The _handler function
+                plays traffic cop for every API call. 
+
+        Args:
+            line (string): the user's line magic
+            cell (None, optional): user's cell magic (this shouldn't ever exist right here).
+        """
         if cell is None:
             line = line.replace("\r", "")
             line_handled = self.handleLine(line)

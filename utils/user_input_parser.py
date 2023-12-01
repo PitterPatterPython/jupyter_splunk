@@ -2,6 +2,8 @@ from argparse import ArgumentParser, BooleanOptionalAction
 from utils.splunk_api import SplunkAPI
 
 class UserInputParser(ArgumentParser):
+    """A class to parse a user's line magic from Jupyter
+    """
     
     def __init__(self, *args, **kwargs):
         self.valid_commands = list(filter(lambda func : not func.startswith('_') and hasattr(getattr(SplunkAPI,func),'__call__') , dir(SplunkAPI)))
@@ -20,6 +22,15 @@ class UserInputParser(ArgumentParser):
         self.parser.parse_args([command, "--help"])
         
     def parse_input(self, input):
+        """Parses the user's line magic from Jupyter
+
+        Args:
+            input (_type_): the entire contents of the line from Jupyter
+
+        Returns:
+            parsed_input (dict): an object containing an error status, a message,
+                and parsed command from argparse.parse()
+        """
         parsed_input = {
             "error" : False,
             "message" : None,

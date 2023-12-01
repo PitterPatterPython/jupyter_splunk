@@ -16,22 +16,44 @@ class SplunkAPI:
         )
         
     def _handler(self, command, **kwargs):
+        """Brokers Splunk API commands on behalf of the calling function
+
+        Args:
+            command (string): the function within this class to run
+            **kwargs (dict): additional arguments to pass along to the
+                functions within this class
+
+        Returns:
+            passes through a response from the functions below
+        """
         return getattr(self, command)(**kwargs)
     
     def get_lookup_table_field_names(self, lookup_table_name):
+        """Retrieve the field names of a lookup table in Splunk
+
+        Args:
+            lookup_table_name (string): the name of the lookup table in Splunk
+
+        Returns:
+            cols: a list of field names from the lookup table in Splunk
+        """
         kwargs = { "earliest_time": "-1m",
                   "latest_time": "now",
                   "search_mode": "normal",
                   "output_mode": "json"}
         
-        query = "| inputlookup robtest.csv | stats dc(*) as * | transpose | table column"
+        query = f"| inputlookup {lookup_table_name} | stats dc(*) as * | transpose | table column"
         
         job = self.session.jobs.export(query, **kwargs)
         cols = [each["column"] for each in results.JSONResultsReader(job) if isinstance(each, dict)]
         return cols
     
     def update_lookup_table(self, **kwargs):
+        """Update a lookup table with a dataframe from Jupyter
 
+        Returns:
+            (string): a simple string containing a success or error message
+        """
 
         table = kwargs.get("table")
         nocheck = kwargs.get("nocheck")
@@ -66,9 +88,9 @@ class SplunkAPI:
             
             lookup_table_append_query = (f"| inputlookup {table}"
                      f"| append [makeresults format=csv data=\"{user_dataframe_as_csv}\"]"
+                     "| uniq"
                      f"| outputlookup {table}"
             )
-            print(lookup_table_append_query)
             
             job = self.session.jobs.create(lookup_table_append_query, **kwargs_normal)
             jiu.displayMD(f"**[ * ]** Search job (**{job.name}**) has been created")
@@ -86,12 +108,11 @@ class SplunkAPI:
                 print(f"\r\t%(doneProgress)03.1f" % stats, end="")
 
                 if stats["isDone"] == "1":
-                    jiu.displayMD("**[ * ]** Job has completed!")
                     break
 
                 sleep(1)
             
-            return "Success"
+            return "**[ * ]** Job has completed!"
         
         except Exception:
             raise
