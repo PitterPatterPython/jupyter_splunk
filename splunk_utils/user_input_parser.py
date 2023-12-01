@@ -1,5 +1,5 @@
 from argparse import ArgumentParser, BooleanOptionalAction
-from utils.splunk_api import SplunkAPI
+from splunk_utils.splunk_api import SplunkAPI
 
 class UserInputParser(ArgumentParser):
     """A class to parse a user's line magic from Jupyter

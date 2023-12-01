@@ -2,7 +2,7 @@ from splunklib import client as splclient
 import splunklib.results as results
 from time import sleep
 import jupyter_integrations_utility as jiu
-from utils.helper_functions import parse_times, splunk_time
+from splunk_utils.helper_functions import parse_times, splunk_time
 
 class SplunkAPI:
     

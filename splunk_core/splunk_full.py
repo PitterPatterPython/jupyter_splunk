@@ -12,9 +12,9 @@ from splunk_core._version import __desc__
 from integration_core import Integration
 import jupyter_integrations_utility as jiu
 
-from utils.splunk_api import SplunkAPI
-from utils.helper_functions import splunk_time, parse_times
-from utils.user_input_parser import UserInputParser
+from splunk_utils.splunk_api import SplunkAPI
+from splunk_utils.helper_functions import splunk_time, parse_times
+from splunk_utils.user_input_parser import UserInputParser
 
 @magics_class
 class Splunk(Integration):
