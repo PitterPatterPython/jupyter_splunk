@@ -38,7 +38,7 @@ if integration_core.__version__ < integration_base_ver_min:
 
 setup_args = dict(
     name='jupyter_' + integration_str,
-    packages=[integration_str + '_core', 'utils'],
+    packages=[integration_str + '_core', 'splunk_utils'],
     version=version_ns['__version__'],
     description="""An Interface Jupyter Notebooks.""",
     long_description="A magic function for working with Apache Drill for Python3 based Jupyter Notebooks",
