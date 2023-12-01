@@ -246,27 +246,44 @@ class Splunk(Integration):
     
         return dataframe, status        
 
-    # Display Help can be customized
-    def customOldHelp(self):
-        self.displayIntegrationHelp()
-        self.displayQueryHelp("search term='MYTERM'")
+    def retQueryHelp(self, q_examples=None):
+        # Our current customHelp function doesn't support a table for line magics
+        # (it's built in to integration_base.py) so I'm overriding it.
+        
+        magic_name = self.magic_name
+        magic = f"%{magic_name}"
+        
+        cell_magic_helper_text = (f"\n## Running {magic_name} queries with cell magics\n"
+                       "--------------------------------\n"
+                       f"\n#### When running {magic} queries with cell magics, {magic} and the instance name will be on the first line of your cell, and then your native {magic} query on the 2nd line.\n"
+                       "\n### Cell magic examples\n"
+                       "-----------------------\n")
+        
+        cell_magic_table = ("| Cell Magic | Description |\n"
+                            "| ---------- | ----------- |\n"
+                            "| \%\%splunk 'instance'<br>'splunk query' | Run a SPL (Splunk) query against myinstance |\n"
+                            )
+        
+        line_magic_helper_text = (f"\n## Running {magic_name} line magics\n"
+                                  "-------------------------------\n"
+                                  f"\n#### To see a line magic's command syntax, type `%splunk 'name of line magic' -h`\n"
+                                  "\n### Line magic examples\n"
+                                  "-----------------------\n")
+        
+        line_magic_table = ("| Line Magic | Description |\n"
+                            "| ---------- | ----------- |\n"
+                            "| \%splunk update_lookup_table 'options' | Update a lookup table with a dataframe. Type `%splunk update_lookup_table -h` for command syntax. |\n")
+        
+        help_out = cell_magic_helper_text + cell_magic_table + line_magic_helper_text + line_magic_table
+        
+        return help_out
 
     def retCustomDesc(self):
         return __desc__
         #return "Jupyter integration for working with the Splunk datasource"
 
     def customHelp(self, curout):
-        n = self.name_str
-        mn = self.magic_name
-        m = "%" + mn
-        mq = "%" + m
-        table_header = "| Magic | Description |\n"
-        table_header += "| -------- | ----- |\n"
-        out = curout
-        qexamples = []
-        qexamples.append(["myinstance", "search term='MYTERM'", "Run a SPL (Splunk) query against myinstance"])
-        qexamples.append(["", "search term='MYTERM'", "Run a SPL (Splunk) query against the default instance"])
-        out += self.retQueryHelp(qexamples)
+        out = self.retQueryHelp(None)
 
         return out
 

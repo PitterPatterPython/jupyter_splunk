@@ -7,7 +7,7 @@ class UserInputParser(ArgumentParser):
     
     def __init__(self, *args, **kwargs):
         self.valid_commands = list(filter(lambda func : not func.startswith('_') and hasattr(getattr(SplunkAPI,func),'__call__') , dir(SplunkAPI)))
-        self.parser = ArgumentParser(prog=r"%splunk <instance>")
+        self.parser = ArgumentParser(prog=r"%splunk")
         
         self.subparsers = self.parser.add_subparsers(dest="command")
         
