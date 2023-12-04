@@ -280,10 +280,10 @@ class Splunk(Integration):
 
     def retCustomDesc(self):
         return __desc__
-        #return "Jupyter integration for working with the Splunk datasource"
 
-    def customHelp(self, curout):
-        out = self.retQueryHelp(None)
+    def customHelp(self, current_output):
+        out = current_output
+        out += self.retQueryHelp(None)
 
         return out
 
