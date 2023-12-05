@@ -15,7 +15,6 @@ import jupyter_integrations_utility as jiu
 from splunk_utils.splunk_api import SplunkAPI
 from splunk_utils.helper_functions import splunk_time, parse_times
 from splunk_utils.user_input_parser import UserInputParser
-import splunklib.results as results
 
 @magics_class
 class Splunk(Integration):
@@ -213,24 +212,8 @@ class Splunk(Integration):
                 sleep(1)
             
             if search_job.results is not None:
-                # dataframe = pd.read_csv(search_job.results(output_mode="csv", count=self.opts["splunk_results_count_size"][0]))
-                resultCount = search_job["resultCount"]
-                offset = 0
-                count = 100
-                accumulated_results = []
-                
-                while (offset < int(resultCount)):
-                    kwargs_paginate = {"count": count, "offset": offset, "output_mode": "json"}
-                    
-                    search_results = search_job.results(**kwargs_paginate)
-                    for result in results.JSONResultsReader(search_results):
-                        if isinstance(result, dict):
-                            accumulated_results.append(result)
-                    
-                    offset += count
-                        
+                dataframe = pd.read_csv(search_job.results(output_mode="csv", count=self.opts["splunk_results_count_size"][0]))
                 str_err = "Success"
-                dataframe = pd.json_normalize(accumulated_results)
             else:
                 dataframe = None
                 str_err = "Success - No Results"
