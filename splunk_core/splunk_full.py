@@ -15,6 +15,7 @@ import jupyter_integrations_utility as jiu
 from splunk_utils.splunk_api import SplunkAPI
 from splunk_utils.helper_functions import splunk_time, parse_times
 from splunk_utils.user_input_parser import UserInputParser
+import splunklib.results as results
 
 @magics_class
 class Splunk(Integration):
@@ -26,7 +27,7 @@ class Splunk(Integration):
     # These are the variables in the opts dict that allowed to be set by the user. 
     # These are specific to this custom integration and are joined with the 
     # base_allowed_set_opts from the integration base
-    custom_allowed_set_opts = ["splunk_conn_default", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin"]
+    custom_allowed_set_opts = ["splunk_conn_default", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin", "splunk_results_count_size"]
 
     myopts = {}
     myopts["splunk_conn_default"] = ["default", "Default instance to connect with"]
@@ -34,6 +35,7 @@ class Splunk(Integration):
     myopts["splunk_default_latest_time"] = ["now", "The default latest time sent to the Splunk server"]
     myopts["splunk_parse_times"] = [1, "If this is 1, it will parse your query for earliest or latest and get the value. It will not alter the query, but update the default earliest/latest for subqueries"]
     myopts["splunk_autologin"] = [True, "Works with the the autologin setting on connect"]
+    myopts["splunk_results_count_size"] = [0, "Changing this value from its default - which is not recommended - will limit the number of results that the results reader displays. It does **NOT** limit the number of results in your query (you must set that limit in your Splunk query)"]
 
     # Class Init function - Obtain a reference to the get_ipython()
     def __init__(self, shell, debug=False, *args, **kwargs):
@@ -211,8 +213,24 @@ class Splunk(Integration):
                 sleep(1)
             
             if search_job.results is not None:
-                dataframe = pd.read_csv(search_job.results(output_mode="csv", count=0))
+                # dataframe = pd.read_csv(search_job.results(output_mode="csv", count=self.opts["splunk_results_count_size"][0]))
+                resultCount = search_job["resultCount"]
+                offset = 0
+                count = 100
+                accumulated_results = []
+                
+                while (offset < int(resultCount)):
+                    kwargs_paginate = {"count": count, "offset": offset, "output_mode": "json"}
+                    
+                    search_results = search_job.results(**kwargs_paginate)
+                    for result in results.JSONResultsReader(search_results):
+                        if isinstance(result, dict):
+                            accumulated_results.append(result)
+                    
+                    offset += count
+                        
                 str_err = "Success"
+                dataframe = pd.json_normalize(accumulated_results)
             else:
                 dataframe = None
                 str_err = "Success - No Results"
