@@ -24,18 +24,6 @@ integration_str = "splunk" # This could change to hive, drill, elastic etc.
 with open(pjoin(here, integration_str + '_core', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
-integration_base_ver_min = '0.1.0'
-
-try:
-    import integration_core
-except:
-    print("jupyter_%s requires jupyter integration_base (version %s required). No jupyter_integration_base found, please install from https://github.com/johnomernik/jupyter_integration_base" % (integration_str, integration_base_ver_min))
-    sys.exit(1)
-
-if integration_core.__version__ < integration_base_ver_min:
-    print("jupyter_%s requires jupyter_integration_base version %s or higher. You are on version %s. Please update" % (integration_str, integration_base_ver_min, integration_core.__version__))
-    sys.exit(1)
-
 setup_args = dict(
     name='jupyter_' + integration_str,
     packages=[integration_str + '_core', 'splunk_utils'],
