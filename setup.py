@@ -10,8 +10,6 @@ if v[:2] < (3, 3):
     print(error, file=sys.stderr)
     sys.exit(1)
 
-
-
 from distutils.core import setup
 
 pjoin = os.path.join
