@@ -74,9 +74,10 @@ class Splunk(Integration):
             try:
                 inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=inst["user"], app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0])
                 result = 0
-            except:
+            except Exception as e:
                 jiu.displayMD(f"**[ * ]** Unable to connect to Splunk instance {instance} at {inst['conn_url']}")
-                result = -2  
+                jiu.displayMD(f"**[ * ]** {str(e)}")
+                result = -2
 
         return result
    
