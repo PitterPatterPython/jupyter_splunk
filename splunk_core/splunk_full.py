@@ -63,7 +63,12 @@ class Splunk(Integration):
                 mypass = self.ret_dec_pass(inst["enc_pass"])
                 inst["connect_pass"] = ""
 
-            app_name = inst['options'].get('app_name', 'search')
+            app_name = inst['options'].get('app_name', 'search'
+            if self.debug:
+                print(f"Host: {inst['host']}")
+                print(f"Port: {inst['port']}")
+                print(f"User: {inst['user']}")
+                print(f"App:  {app_name}")
 
             try:
                 inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=inst["user"], app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0])
