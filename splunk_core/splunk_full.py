@@ -62,8 +62,11 @@ class Splunk(Integration):
             if inst["enc_pass"] is not None:
                 mypass = self.ret_dec_pass(inst["enc_pass"])
                 inst["connect_pass"] = ""
+
+            app_name = inst['options'].get('app_name', 'search')
+
             try:
-                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=inst["user"], password=mypass, autologin=self.opts["splunk_autologin"][0])
+                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=inst["user"], app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0])
                 result = 0
             except:
                 jiu.displayMD(f"**[ * ]** Unable to connect to Splunk instance {instance} at {inst['conn_url']}")
