@@ -63,7 +63,8 @@ class Splunk(Integration):
                 mypass = self.ret_dec_pass(inst["enc_pass"])
                 inst["connect_pass"] = ""
 
-            app_name = inst['options'].get('app_name', 'search'
+            app_name = inst['options'].get('app_name', 'search')
+
             if self.debug:
                 print(f"Host: {inst['host']}")
                 print(f"Port: {inst['port']}")
