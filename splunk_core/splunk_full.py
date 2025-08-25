@@ -58,7 +58,15 @@ class Splunk(Integration):
             inst = self.instances[instance]
         if inst is not None:
             inst["session"] = None
+            useproxy = inst['options'].get('useproxy', 0)
+            if useproxy == 1:
+                myproxies = self.retProxy(instance)['http']
+            else:
+                myproxies = None
+
             mypass = ""
+            username = inst['user']
+
             if inst["enc_pass"] is not None:
                 mypass = self.ret_dec_pass(inst["enc_pass"])
                 inst["connect_pass"] = ""
@@ -68,12 +76,15 @@ class Splunk(Integration):
             if self.debug:
                 print(f"Host: {inst['host']}")
                 print(f"Port: {inst['port']}")
-                print(f"User: {inst['user']}")
+                print(f"User: {username}")
                 print(f"App:  {app_name}")
+                print(f"Use Proxy: {useproxy}")
+
 
             try:
-                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=inst["user"], app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0])
+                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=username, app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0], proxies=myproxies)
                 result = 0
+
             except Exception as e:
                 jiu.displayMD(f"**[ * ]** Unable to connect to Splunk instance {instance} at {inst['conn_url']}")
                 jiu.displayMD(f"**[ * ]** {str(e)}")

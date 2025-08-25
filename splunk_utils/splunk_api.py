@@ -5,16 +5,30 @@ import jupyter_integrations_utility as jiu
 from splunk_utils.helper_functions import parse_times, splunk_time
 
 class SplunkAPI:
-    
-    def __init__(self, host, port, username, app, password, autologin):
-        self.session = splclient.connect(
-            host=host,
-            port=port,
-            app=app,
-            username=username,
-            password=password,
-            autologin=autologin
-        )
+
+    def __init__(self, host, port, username, app, password, autologin, proxies=None):
+
+
+        if username.lower() != "api_auth":
+            self.session = splclient.connect(
+                host=host,
+                port=port,
+                app=app,
+                username=username,
+                password=password,
+                proxies=proxies,
+                autologin=autologin
+            )
+        else:
+            self.session = splclient.connect(
+                host=host,
+                port=port,
+                app=app,
+                splunkToken=password,
+                proxies=proxies,
+                autologin=autologin
+            )
+
 
     def _handler(self, command, **kwargs):
         """Brokers Splunk API commands on behalf of the calling function
