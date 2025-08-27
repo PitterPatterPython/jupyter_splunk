@@ -21,12 +21,12 @@ class Splunk(Integration):
     # STATIC VARIABLES
     name_str = "splunk" # The name of the integration
     instances = {}
-    custom_evars = ["splunk_conn_default", "splunk_autologin"]
+    custom_evars = ["splunk_conn_default", "splunk_autologin", "splunk_dispatch_ttl", "splunk_status_buckets", "splunk_def_search_level"]
 
     # These are the variables in the opts dict that allowed to be set by the user.
     # These are specific to this custom integration and are joined with the
     # base_allowed_set_opts from the integration base
-    custom_allowed_set_opts = ["splunk_conn_default", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin"]
+    custom_allowed_set_opts = ["splunk_conn_default", "splunk_status_buckets", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin", "splunk_dispatch_ttl", "splunk_def_search_level"]
 
     myopts = {}
     myopts["splunk_conn_default"] = ["default", "Default instance to connect with"]
@@ -34,6 +34,9 @@ class Splunk(Integration):
     myopts["splunk_default_latest_time"] = ["now", "The default latest time sent to the Splunk server"]
     myopts["splunk_parse_times"] = [1, "If this is 1, it will parse your query for earliest or latest and get the value. It will not alter the query, but update the default earliest/latest for subqueries"]
     myopts["splunk_autologin"] = [True, "Works with the the autologin setting on connect"]
+    myopts["splunk_dispatch_ttl"] = ["600", "Time to keep results around  We will default to 10 minutes (600 seconds)"]
+    myopts["splunk_def_search_level"] = ["verbose", "Can be verbose or smart defaults to smart"]
+    myopts["splunk_status_buckets"] = ["0", "number of buckets set to 0 for truly verbose"]
 
     # Class Init function - Obtain a reference to the get_ipython()
     def __init__(self, shell, debug=False, *args, **kwargs):
@@ -206,8 +209,9 @@ class Splunk(Integration):
             "earliest_time": earliest_value,
             "latest_time": latest_value,
             "exec_mode": "normal",
-            "status_buckets": "0",
-            "adhoc_search_level": "verbose"
+            "status_buckets": self.opts["splunk_status_buckets"][0],
+            "adhoc_search_level": self.opts['splunk_def_search_level'][0],
+            "dispatch.ttl": self.opts['splunk_dispatch_ttl'][0]
         }
         if self.debug:
             jiu.displayMD(f"**[ Dbg ]** **kwargs**: {kwargs}")
@@ -218,49 +222,40 @@ class Splunk(Integration):
         str_err = ""
 
         # Perform the search
+
+        search_job = self.instances[instance]["session"].session.jobs.create(query, **kwargs)
+        jiu.displayMD(f"**[ * ]** Search job (**{search_job.name}**) has been created")
+        jiu.displayMD("**Progress**")
+
+        while True:
+            while not search_job.is_ready():
+                time.sleep(0.2)
+            search_job.refresh()
+            stats = { "isDone": search_job["isDone"],
+                       "doneProgress": float(search_job["doneProgress"])*100,
+                       "scanCount": int(search_job["scanCount"]),
+                       "eventCount": int(search_job["eventCount"]),
+                       "resultCount": int(search_job["resultCount"])
+                    }
+
+            print(f"\r\t%(doneProgress)03.1f%%\t\t%(scanCount)d scanned\t\t%(eventCount)d matched\t\t%(resultCount)d results" % stats, end="")
+
+            if stats["isDone"] == "1":
+               jiu.displayMD("**[ * ]** Job has completed!")
+               break
+            sleep(1)
         try:
-            search_job = self.instances[instance]["session"].session.jobs.create(query, **kwargs)
-            jiu.displayMD(f"**[ * ]** Search job (**{search_job.name}**) has been created")
-            jiu.displayMD("**Progress**")
-
-            while True:
-                while not search_job.is_ready():
-                    pass
-
-                stats = { "isDone": search_job["isDone"],
-                            "doneProgress": float(search_job["doneProgress"])*100,
-                            "scanCount": int(search_job["scanCount"]),
-                            "eventCount": int(search_job["eventCount"]),
-                            "resultCount": int(search_job["resultCount"])
-                        }
-
-                print(f"\r\t%(doneProgress)03.1f%%\t\t%(scanCount)d scanned\t\t%(eventCount)d matched\t\t%(resultCount)d results" % stats, end="")
-
-                if stats["isDone"] == "1":
-                    jiu.displayMD("**[ * ]** Job has completed!")
-                    break
-
-                sleep(1)
-
             if search_job.results is not None:
-                dataframe = pd.read_csv(search_job.results(output_mode="csv", count=0))
-                str_err = "Success"
+                dataframe = self._read_all_results_csv(search_job, instance)
+            if len(dataframe) > 0:
+                status = "Success"
             else:
-                dataframe = None
-                str_err = "Success - No Results"
-
+                status = "Success - No Results"
         except Exception as e:
             dataframe = None
-            str_err = str(e)
+            str_err = f"Error - {str(e)}"
 
-        if str_err.find("Success") >= 0:
-            pass
-
-        elif str_err.find("No columns to parse from file") >= 0:
-            status = "Success - No Results"
-            dataframe = None
-
-        elif str_err.find("Session is not logged in") >= 0:
+        if str_err.find("Session is not logged in") >= 0:
 
             # Try to rerun query
             if reconnect == True:
@@ -277,6 +272,40 @@ class Splunk(Integration):
             status = "Failure - query_error: " + str_err
 
         return dataframe, status
+
+    def _rebind_job_by_sid(self, serivce, sid):
+        return service.jobs[sid]
+
+    def _read_all_results_csv(self, job, instance, max_retries=2): 
+        attempts = 0
+        service = self.instances[instance]['session']
+        while True:
+            try:
+                # count=0 => all results (your preference)
+                stream = job.results(output_mode="csv", count=0)
+                try:
+                    df = pd.read_csv(stream)
+                except pd.errors.EmptyDataError:
+                    return pd.DataFrame()  # Success - No Results
+
+                return df
+
+            except Exception as e:
+                msg = str(e)
+                # Common Splunk Cloud hiccups:
+                needs_rebind = ("invalid sid" in msg.lower()) or ("404" in msg)
+                needs_login  = ("Session is not logged in" in msg) or ("401" in msg)
+
+                if (needs_rebind or needs_login) and attempts < max_retries:
+                    attempts += 1
+                # reconnect service, then rebind job by SID
+                    self.reconnect(instance)
+                    job = self._rebind_job_by_sid(self.instances[instance]['session'], job.sid)
+                    time.sleep(0.5)  # tiny backoff
+                    continue
+
+            # Give up: propagate original error
+            raise
 
     def retQueryHelp(self, q_examples=None):
         # Our current customHelp function doesn't support a table for line magics
