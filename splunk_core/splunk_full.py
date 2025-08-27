@@ -274,7 +274,7 @@ class Splunk(Integration):
                     dataframe = m
                     status = s
 
-               else:
+                else:
                     dataframe = None
                     status = "Failure - Session not logged in and reconnect failed"
             else:
