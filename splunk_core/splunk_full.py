@@ -3,7 +3,7 @@
 import datetime
 import re
 from time import sleep
-
+import time
 from IPython.core.magic import (magics_class, line_cell_magic)
 from IPython.display import display
 import pandas as pd
