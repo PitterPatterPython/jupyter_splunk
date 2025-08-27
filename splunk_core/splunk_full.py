@@ -263,7 +263,7 @@ class Splunk(Integration):
             print(f"Status: {status}")
             print(f"Err: {str_err}")
 
-        if status.find("Success) < 0:
+        if status.find("Success") < 0:
             if str_err.find("Session is not logged in") >= 0:
 
             # Try to rerun query
