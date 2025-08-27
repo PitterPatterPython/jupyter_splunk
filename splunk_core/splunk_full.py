@@ -223,37 +223,55 @@ class Splunk(Integration):
 
         # Perform the search
 
+        query_attempts = 1
         search_job = self.instances[instance]["session"].session.jobs.create(query, **kwargs)
         jiu.displayMD(f"**[ * ]** Search job (**{search_job.name}**) has been created")
         jiu.displayMD("**Progress**")
 
+    
         while True:
-            while not search_job.is_ready():
-                time.sleep(0.2)
+            try:
+                while not search_job.is_ready():
+                    time.sleep(0.2)
 #            search_job.refresh() Chat GPT recommended this but it caused an attribute error on the next line... 
-            stats = { "isDone": search_job["isDone"],
+                stats = { "isDone": search_job["isDone"],
                        "doneProgress": float(search_job["doneProgress"])*100,
                        "scanCount": int(search_job["scanCount"]),
                        "eventCount": int(search_job["eventCount"]),
                        "resultCount": int(search_job["resultCount"])
                     }
 
-            print(f"\r\t%(doneProgress)03.1f%%\t\t%(scanCount)d scanned\t\t%(eventCount)d matched\t\t%(resultCount)d results" % stats, end="")
+                print(f"\r\t%(doneProgress)03.1f%%\t\t%(scanCount)d scanned\t\t%(eventCount)d matched\t\t%(resultCount)d results" % stats, end="")
 
-            if stats["isDone"] == "1":
-               jiu.displayMD("**[ * ]** Job has completed!")
-               break
-            sleep(1)
+                if stats["isDone"] == "1":
+                    jiu.displayMD("**[ * ]** Job has completed!")
+                    break
+                sleep(1)
+            except Exception as e:
+                msg = str(e)
+                if msg.find("404") >= 0 or msg.lower().find("invalid sid") >= 0:
+                    query_attempts += 1
+                    if query_attempts < 3:
+                        print(f"Resubmitting attempt {query_attempts}")
+                        self.disconnect(instance)
+                        self.connect(instance)
+                        dataframe, status = self.customQuery(query, instance, False)
+                    else:
+                        dataframe = None
+                        status = f"Failure - 2 retries - {msg}"
+                else:
+                    dataframe = None
+                    status = f"Failure - {msg}"
+                    return dataframe, status
         try:
             if search_job.results is not None:
                 dataframe = self._read_all_results_csv(search_job, instance)
-            
                 if isinstance(dataframe, pd.DataFrame) and len(dataframe) > 0:
                     status = "Success"
                 elif isinstance(dataframe, pd.DataFrame) and len(dataframe) == 0:
                     status = "Success - No Results"
                 else:
-                    status = "Failed - UKNOWN"
+                    status = "Failure - UKNOWN"
         except Exception as e:
             dataframe = None
             str_err = f"Error - {str(e)}"
@@ -287,7 +305,7 @@ class Splunk(Integration):
             print("in rebind")
         return service.jobs[sid]
 
-    def _read_all_results_csv(self, job, instance, max_retries=2): 
+    def _read_all_results_csv(self, job, instance, max_retries=3):
         attempts = 0
         service = self.instances[instance]['session']
         while True:
@@ -306,7 +324,7 @@ class Splunk(Integration):
                 msg = str(e)
                 print(f"Initial error on attempt {attempts} is {msg}")
                 # Common Splunk Cloud hiccups:
-                needs_rebind = ("invalid sid" in msg.lower()) or ("404" in msg)
+                needs_rebind = (("unknown sid" in msg.lower()) or ("invalid sid" in msg.lower()) or ("404" in msg))
                 needs_login  = ("Session is not logged in" in msg) or ("401" in msg)
 
                 if (needs_rebind or needs_login) and attempts <= max_retries:
