@@ -248,35 +248,37 @@ class Splunk(Integration):
             if search_job.results is not None:
                 dataframe = self._read_all_results_csv(search_job, instance)
             
-            if isinstance(dataframe, pd.DataFrame) and len(dataframe) > 0:
-                status = "Success"
-            elif isinstance(dataframe, pd.DataFrame) and len(dataframe) == 0:
-                status = "Success - No Results"
-            else:
-                status = "Failed - UKNOWN"
+                if isinstance(dataframe, pd.DataFrame) and len(dataframe) > 0:
+                    status = "Success"
+                elif isinstance(dataframe, pd.DataFrame) and len(dataframe) == 0:
+                    status = "Success - No Results"
+                else:
+                    status = "Failed - UKNOWN"
         except Exception as e:
             dataframe = None
             str_err = f"Error - {str(e)}"
 
         if self.debug:
             print(f"Type of dataframe: {type(dataframe)}")
+            print(f"Status: {status}")
             print(f"Err: {str_err}")
 
-        if str_err.find("Session is not logged in") >= 0:
+        if status.find("Success) < 0:
+            if str_err.find("Session is not logged in") >= 0:
 
             # Try to rerun query
-            if reconnect == True:
-                self.disconnect(instance)
-                self.connect(instance)
-                m, s = self.customQuery(query, instance, False)
-                dataframe = m
-                status = s
+                if reconnect == True:
+                    self.disconnect(instance)
+                    self.connect(instance)
+                    m, s = self.customQuery(query, instance, False)
+                    dataframe = m
+                    status = s
 
+               else:
+                    dataframe = None
+                    status = "Failure - Session not logged in and reconnect failed"
             else:
-                dataframe = None
-                status = "Failure - Session not logged in and reconnect failed"
-        else:
-            status = "Failure - query_error: " + str_err
+                status = "Failure - query_error: " + str_err
 
         return dataframe, status
 
