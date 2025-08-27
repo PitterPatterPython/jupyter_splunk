@@ -230,7 +230,7 @@ class Splunk(Integration):
         while True:
             while not search_job.is_ready():
                 time.sleep(0.2)
-            search_job.refresh()
+#            search_job.refresh() Chat GPT recommended this but it caused an attribute error on the next line... 
             stats = { "isDone": search_job["isDone"],
                        "doneProgress": float(search_job["doneProgress"])*100,
                        "scanCount": int(search_job["scanCount"]),
