@@ -247,13 +247,20 @@ class Splunk(Integration):
         try:
             if search_job.results is not None:
                 dataframe = self._read_all_results_csv(search_job, instance)
-            if len(dataframe) > 0:
+            
+            if isinstance(dataframe, pd.DataFrame) and len(dataframe) > 0:
                 status = "Success"
-            else:
+            elif isinstance(dataframe, pd.DataFrame) and len(dataframe) == 0:
                 status = "Success - No Results"
+            else:
+                status = "Failed - UKNOWN"
         except Exception as e:
             dataframe = None
             str_err = f"Error - {str(e)}"
+
+        if self.debug:
+            print(f"Type of dataframe: {type(dataframe)}")
+            print(f"Err: {str_err}")
 
         if str_err.find("Session is not logged in") >= 0:
 
@@ -274,6 +281,8 @@ class Splunk(Integration):
         return dataframe, status
 
     def _rebind_job_by_sid(self, serivce, sid):
+        if self.debug:
+            print("in rebind")
         return service.jobs[sid]
 
     def _read_all_results_csv(self, job, instance, max_retries=2): 
@@ -291,16 +300,20 @@ class Splunk(Integration):
                 return df
 
             except Exception as e:
+                attempts += 1
                 msg = str(e)
+                print(f"Initial error on attempt {attempts} is {msg}")
                 # Common Splunk Cloud hiccups:
                 needs_rebind = ("invalid sid" in msg.lower()) or ("404" in msg)
                 needs_login  = ("Session is not logged in" in msg) or ("401" in msg)
 
-                if (needs_rebind or needs_login) and attempts < max_retries:
-                    attempts += 1
+                if (needs_rebind or needs_login) and attempts <= max_retries:
+                    print("Trying reconnect and rebind")
                 # reconnect service, then rebind job by SID
                     self.reconnect(instance)
-                    job = self._rebind_job_by_sid(self.instances[instance]['session'], job.sid)
+                    service = self.instances[instance]['session']
+
+                    job = self._rebind_job_by_sid(service, job.sid)
                     time.sleep(0.5)  # tiny backoff
                     continue
 
