@@ -21,7 +21,7 @@ class Splunk(Integration):
     # STATIC VARIABLES
     name_str = "splunk" # The name of the integration
     instances = {}
-    custom_evars = ["splunk_conn_default", "splunk_autologin", "splunk_dispatch_ttl", "splunk_status_buckets", "splunk_def_search_level", "splunk_verify", "splunk_supresssslwarn"]
+    custom_evars = ["splunk_conn_default", "splunk_autologin", "splunk_dispatch_ttl", "splunk_status_buckets", "splunk_def_search_level", "splunk_verify", "splunk_surpresssslwarn"]
 
     # These are the variables in the opts dict that allowed to be set by the user.
     # These are specific to this custom integration and are joined with the
