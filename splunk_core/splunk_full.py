@@ -65,7 +65,7 @@ class Splunk(Integration):
             inst["session"] = None
             useproxy = inst['options'].get('useproxy', 0)
             if useproxy == 1:
-                myproxies = self.retProxy(instance)['http']
+                myproxies = self.retProxy(instance)
             else:
                 myproxies = None
 
@@ -78,15 +78,18 @@ class Splunk(Integration):
 
             app_name = inst['options'].get('app_name', 'search')
 
+            surpressSSLWarn = self.opts["splunk_surpresssslwarn"][0]
+            verify = self.opts["splunk_verify"][0]
+
             if self.debug:
                 print(f"Host: {inst['host']}")
                 print(f"Port: {inst['port']}")
                 print(f"User: {username}")
                 print(f"App:  {app_name}")
                 print(f"Use Proxy: {useproxy}")
+                print(f"Verify: {verify}")
+                print(f"surpressSSLWarnL {surpressSSLWarn}")
 
-            surpressSSLWarn = self.opts["splunk_surpresssslwarn"][0]
-            verify = self.opts["splunk_verify"][0]
 
 
             try:
