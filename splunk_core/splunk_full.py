@@ -85,12 +85,12 @@ class Splunk(Integration):
                 print(f"App:  {app_name}")
                 print(f"Use Proxy: {useproxy}")
 
-            surpresssslwarn = self.opts["splunk_surpresssslwarn"][0]
+            surpressSSLWarn = self.opts["splunk_surpresssslwarn"][0]
             verify = self.opts["splunk_verify"][0]
 
 
             try:
-                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=username, app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0], proxies=myproxies, verify=verify, supressSSLWarn=supresssslwarn)
+                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=username, app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0], proxies=myproxies, verify=verify, supressSSLWarn=supressSSLWarn)
                 result = 0
 
             except Exception as e:
