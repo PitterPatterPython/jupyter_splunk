@@ -35,7 +35,7 @@ class Splunk(Integration):
     myopts["splunk_parse_times"] = [1, "If this is 1, it will parse your query for earliest or latest and get the value. It will not alter the query, but update the default earliest/latest for subqueries"]
     myopts["splunk_autologin"] = [True, "Works with the the autologin setting on connect"]
     myopts["splunk_verify"] = [True, "Validates SSL Certs"]
-    myopts["splunk_supresssslwarn"] = [False, "Hides SSL Warnings"]
+    myopts["splunk_surpresssslwarn"] = [False, "Hides SSL Warnings"]
     myopts["splunk_dispatch_ttl"] = ["600", "Time to keep results around  We will default to 10 minutes (600 seconds)"]
     myopts["splunk_def_search_level"] = ["verbose", "Can be verbose or smart defaults to smart"]
     myopts["splunk_status_buckets"] = ["0", "number of buckets set to 0 for truly verbose"]
@@ -90,7 +90,7 @@ class Splunk(Integration):
 
 
             try:
-                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=username, app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0], proxies=myproxies, verify=verify, supressSSLWarn=supressSSLWarn)
+                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=username, app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0], proxies=myproxies, verify=verify, surpressSSLWarn=surpressSSLWarn)
                 result = 0
 
             except Exception as e:

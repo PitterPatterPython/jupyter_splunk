@@ -9,12 +9,12 @@ import urllib3
 
 
 
-def make_requests_proxy_handler(proxies=None, verify=True, supressSSLWarn=False):
+def make_requests_proxy_handler(proxies=None, verify=True, surpressSSLWarn=False):
     spl_session = requests.Session()
     if proxies is not None:
         spl_session.proxies.update(proxies)
     spl_session.verify = verify
-    if supressSSLWarn:
+    if surpressSSLWarn:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     
     def handler(url, message, **kwargs):
@@ -44,9 +44,9 @@ def make_requests_proxy_handler(proxies=None, verify=True, supressSSLWarn=False)
 
 class SplunkAPI:
 
-    def __init__(self, host, port, username, app, password, autologin, proxies=None, verify=True, supressSSLWarn=False):
+    def __init__(self, host, port, username, app, password, autologin, proxies=None, verify=True, surpressSSLWarn=False):
 
-        this_handler = make_requests_proxy_handler(proxies=proxies, verify=verify, supressSSLWarn=supressSSLWarn)
+        this_handler = make_requests_proxy_handler(proxies=proxies, verify=verify, surpressSSLWarn=surpressSSLWarn)
 
         if username.lower() != "api_auth":
             self.session = splclient.Service(
