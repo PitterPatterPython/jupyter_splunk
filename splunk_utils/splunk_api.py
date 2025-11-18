@@ -9,44 +9,11 @@ import urllib3
 
 
 
-def make_requests_proxy_handler(proxies=None, verify=True, surpressSSLWarn=False):
-    spl_session = requests.Session()
-    if proxies is not None:
-        spl_session.proxies.update(proxies)
-    spl_session.verify = verify
-    if surpressSSLWarn:
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    
-    def handler(url, message, **kwargs):
-    
-        headers = dict(message.get("headers") or [])
-        method = message.get("method", "GET")
-        body = message.get("body", b"")
-        timeout = kwargs.get("timeout", None)
-
-        resp = spl_session.request(
-                method=method,
-                url=str(url),
-                headers=headers,
-                data=body,
-                timeout=timeout,
-                stream=True,
-            )
-
-        return {
-                "status": resp.status_code,
-                "reason": resp.reason,
-                "headers": list(resp.headers.items()),
-                "body": io.BytesIO(resp.content),
-        }
-
-
-
 class SplunkAPI:
 
     def __init__(self, host, port, username, app, password, autologin, proxies=None, verify=True, surpressSSLWarn=False):
 
-        this_handler = make_requests_proxy_handler(proxies=proxies, verify=verify, surpressSSLWarn=surpressSSLWarn)
+        this_handler = self.make_requests_proxy_handler(proxies=proxies, verify=verify, surpressSSLWarn=surpressSSLWarn)
 
         if username.lower() != "api_auth":
             self.session = splclient.Service(
@@ -64,10 +31,49 @@ class SplunkAPI:
                 port=port,
                 app=app,
                 splunkToken=password,
-                handler=thie_handler,
+                handler=this_handler,
                 autologin=autologin
             )
         self.session.login()
+
+
+    def make_requests_proxy_handler(self, proxies=None, verify=True, surpressSSLWarn=False):
+
+        spl_session = requests.Session()
+        if proxies is not None:
+            spl_session.proxies.update(proxies)
+        spl_session.verify = verify
+        if surpressSSLWarn:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+
+        def handler(url, message, **kwargs):
+
+            headers = dict(message.get("headers") or [])
+            method = message.get("method", "GET")
+            body = message.get("body", b"")
+            timeout = kwargs.get("timeout", None)
+
+            if self.debug:
+                print(f"Headers: {headers}")
+
+
+            resp = spl_session.request(
+                method=method,
+                url=str(url),
+                headers=headers,
+                data=body,
+                timeout=timeout,
+                stream=True,
+            )
+
+            return {
+                "status": resp.status_code,
+                "reason": resp.reason,
+                "headers": list(resp.headers.items()),
+                "body": io.BytesIO(resp.content),
+            }
 
 
     def _handler(self, command, **kwargs):
