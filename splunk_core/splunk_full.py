@@ -21,12 +21,12 @@ class Splunk(Integration):
     # STATIC VARIABLES
     name_str = "splunk" # The name of the integration
     instances = {}
-    custom_evars = ["splunk_conn_default", "splunk_autologin", "splunk_dispatch_ttl", "splunk_status_buckets", "splunk_def_search_level"]
+    custom_evars = ["splunk_conn_default", "splunk_autologin", "splunk_dispatch_ttl", "splunk_status_buckets", "splunk_def_search_level", "splunk_verify", "splunk_supresssslwarn"]
 
     # These are the variables in the opts dict that allowed to be set by the user.
     # These are specific to this custom integration and are joined with the
     # base_allowed_set_opts from the integration base
-    custom_allowed_set_opts = ["splunk_conn_default", "splunk_status_buckets", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin", "splunk_dispatch_ttl", "splunk_def_search_level"]
+    custom_allowed_set_opts = ["splunk_conn_default", "splunk_status_buckets", "splunk_default_earliest_time", "splunk_default_latest_time", "splunk_parse_times", "splunk_autologin", "splunk_dispatch_ttl", "splunk_def_search_level", "splunk_verify", "splunk_surpresssslwarn"]
 
     myopts = {}
     myopts["splunk_conn_default"] = ["default", "Default instance to connect with"]
@@ -34,6 +34,8 @@ class Splunk(Integration):
     myopts["splunk_default_latest_time"] = ["now", "The default latest time sent to the Splunk server"]
     myopts["splunk_parse_times"] = [1, "If this is 1, it will parse your query for earliest or latest and get the value. It will not alter the query, but update the default earliest/latest for subqueries"]
     myopts["splunk_autologin"] = [True, "Works with the the autologin setting on connect"]
+    myopts["splunk_verify"] = [True, "Validates SSL Certs"]
+    myopts["splunk_supresssslwarn"] = [False, "Hides SSL Warnings"]
     myopts["splunk_dispatch_ttl"] = ["600", "Time to keep results around  We will default to 10 minutes (600 seconds)"]
     myopts["splunk_def_search_level"] = ["verbose", "Can be verbose or smart defaults to smart"]
     myopts["splunk_status_buckets"] = ["0", "number of buckets set to 0 for truly verbose"]
@@ -83,9 +85,12 @@ class Splunk(Integration):
                 print(f"App:  {app_name}")
                 print(f"Use Proxy: {useproxy}")
 
+            surpresssslwarn = self.opts["splunk_surpresssslwarn"][0]
+            verify = self.opts["splunk_verify"][0]
+
 
             try:
-                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=username, app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0], proxies=myproxies)
+                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=username, app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0], proxies=myproxies, verify=verify, supressSSLWarn=supresssslwarn)
                 result = 0
 
             except Exception as e:
