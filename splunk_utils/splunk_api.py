@@ -41,6 +41,8 @@ class SplunkAPI:
 
         spl_session = requests.Session()
         if proxies is not None:
+            if self.debug:
+                print(f"Updating proxies")
             spl_session.proxies.update(proxies)
         spl_session.verify = verify
         if surpressSSLWarn:
@@ -74,7 +76,7 @@ class SplunkAPI:
                 "headers": list(resp.headers.items()),
                 "body": io.BytesIO(resp.content),
             }
-
+        return handler
 
     def _handler(self, command, **kwargs):
         """Brokers Splunk API commands on behalf of the calling function
