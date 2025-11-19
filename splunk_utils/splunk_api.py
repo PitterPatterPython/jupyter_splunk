@@ -49,8 +49,14 @@ class SplunkAPI:
 
         if self.debug:
             print(f"Setting verify to {verify}")
+        if verify == "False":
+            verify = False
+        if verify == "True":
+            verify = True
+
+
         spl_session.verify = verify
-        if surpressSSLWarn:
+        if surpressSSLWarn or surpressSSLWarn == "True":
             if self.debug:
                 print("Disabling Warning")
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

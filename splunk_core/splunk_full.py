@@ -88,7 +88,7 @@ class Splunk(Integration):
                 print(f"App:  {app_name}")
                 print(f"Use Proxy: {useproxy}")
                 print(f"Verify: {verify}")
-                print(f"surpressSSLWarnL {surpressSSLWarn}")
+                print(f"surpressSSLWarn {surpressSSLWarn}")
 
 
 
