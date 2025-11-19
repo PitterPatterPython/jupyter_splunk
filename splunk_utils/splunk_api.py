@@ -46,8 +46,13 @@ class SplunkAPI:
             if self.debug:
                 print(f"Updating proxies")
             spl_session.proxies.update(proxies)
+
+        if self.debug:
+            print(f"Setting verify to {verify}")
         spl_session.verify = verify
         if surpressSSLWarn:
+            if self.debug:
+                print("Disabling Warning")
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
