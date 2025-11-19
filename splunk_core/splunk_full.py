@@ -93,7 +93,7 @@ class Splunk(Integration):
 
 
             try:
-                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=username, app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0], proxies=myproxies, verify=verify, surpressSSLWarn=surpressSSLWarn)
+                inst["session"] = SplunkAPI(host=inst["host"], port=inst["port"], username=username, app=app_name, password=mypass, autologin=self.opts["splunk_autologin"][0], proxies=myproxies, verify=verify, surpressSSLWarn=surpressSSLWarn, debug=self.debug)
                 result = 0
 
             except Exception as e:

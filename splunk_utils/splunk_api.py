@@ -11,7 +11,9 @@ import urllib3
 
 class SplunkAPI:
 
-    def __init__(self, host, port, username, app, password, autologin, proxies=None, verify=True, surpressSSLWarn=False):
+    def __init__(self, host, port, username, app, password, autologin, proxies=None, verify=True, surpressSSLWarn=False, debug=False):
+
+        self.debug = debug
 
         this_handler = self.make_requests_proxy_handler(proxies=proxies, verify=verify, surpressSSLWarn=surpressSSLWarn)
 
